@@ -1,0 +1,80 @@
+##### Cacti #####
+yum -y install vim net-tools wget unzip epel* && yum -y update
+yum install httpd httpd-devel -y && yum install mariadb-server -y
+yum install php-snmp net-snmp-utils net-snmp-libs rrdtool -y
+yum install php-mysql php-pear php-common php-gd php-devel php php-mbstring php-cli -y
+systemctl enable httpd.service mariadb.service snmpd.service && systemctl start httpd.service mariadb.service snmpd.service
+mysql_secure_installation
+mysql -u root -p -e "create database cactidb;"
+vim /etc/php.ini
+date.timezone = Asia/Dhaka
+
+
+cd /var/www/html
+wget https://files.cacti.net/cacti/linux/cacti-0.8.8h.tar.gz --no-check-certificate
+tar -zxvf cacti-0.8.8h.tar.gz && mv cacti-0.8.8h cacti
+mysql -u root -p cactidb < /var/www/html/cacti/cacti.sql
+vim cacti/include/config.php
+systemctl restart httpd.service mariadb.service snmpd.service
+date
+crontab -e
+*/5 * * * * php /var/www/html/cacti/poller.php > /dev/null 2>&1
+
+
+##### Plugin #####
+# Weathermap
+cd /var/www/html/cacti
+cd plugins
+wget https://github.com/howardjones/network-weathermap/releases/download/version-0.98a/php-weathermap-0.98a.zip
+unzip php-weathermap-0.98a.zip
+cd weathermap && chmod -R 777 configs output
+mkdir ../../cache && chmod -R 777 ../../cache
+
+
+
+### Cacti Write Permition####
+chown -R root:apache /var/www/html/cacti;
+chown -R root:apache /var/www/html/cacti/*;
+chmod -R 775 /var/www/html/cacti;
+chmod -R 775 /var/www/html/cacti/*;
+systemctl restart httpd
+
+console>setting>misc>/var/www/html/cacti/cache
+
+
+
+#### when Graph Zoom is not working ####
+yum install nano -y
+nano graph_image.php
+nano graph_xport.php
+systemctl restart httpd
+
+
+
+### Desable Firewall ###
+sestatus
+systemctl disable firewalld
+systemctl stop firewalld
+nano /etc/selinux/config
+	#SELINUX=disabled
+reboot
+
+
+
+
+
+#### timedacectl Allow ####
+date
+timedatectl status
+timedatectl set-timezone Asia/Dhaka
+timedatectl set-local-rtc yes
+timedatectl set-local-rtc 1
+timedatectl set-ntp true >>>> if no support NTP then please install >>>>>$ sudo yum install chrony or yum install ntp -y
+timedatectl set-ntp false
+systemctl restart ntpd
+
+
+
+
+
+
